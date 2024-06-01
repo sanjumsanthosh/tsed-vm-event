@@ -4,7 +4,10 @@
   "type": "module",
   "scripts": {
     "start": "bun index.ts",
-    "prod": "pm2 start --interpreter ~/.nvm/versions/node/v16.20.2/bin/bun pm2.config.js"
+    "prod:start": "pm2 start --interpreter ~/.nvm/versions/node/v16.20.2/bin/bun --name app index.ts",
+    "prod:stop": "pm2 stop app",
+    "prod:restart": "pm2 restart app",
+    "prod:logs": "pm2 logs app"
   },
   "devDependencies": {
     "@types/bun": "latest"
