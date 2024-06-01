@@ -12,7 +12,7 @@ const server = Bun.serve({
         };
         if (url.pathname === "/rest/webhook" && req.method === "POST") {
             if (req.headers.get("Authorization") !== `Bearer ${hardcodedPassword}`) {
-                return new Response("Unauthorized!", { status: 401 });
+                return new Response("Unauthorized!", { status: 401 , headers: corsHeaders});
             }
             const body = await req.text();
             console.log(`Received request`);
@@ -54,7 +54,7 @@ const server = Bun.serve({
         if (url.pathname === "/db/mark" && req.method === "POST") {
             const id = url.searchParams.get("id");
             if (req.headers.get("Authorization") !== `Bearer ${hardcodedPassword}`) {
-                return new Response("Unauthorized!", { status: 401 });
+                return new Response("Unauthorized!", { status: 401, headers: corsHeaders });
             }
             console.log(`Marking as read: ${id}`);
             if (!id) {
@@ -66,7 +66,7 @@ const server = Bun.serve({
         if (url.pathname === "/db/mark/unread" && req.method === "POST") {
             const id = url.searchParams.get("id");
             if (req.headers.get("Authorization") !== `Bearer ${hardcodedPassword}`) {
-                return new Response("Unauthorized!", { status: 401 });
+                return new Response("Unauthorized!", { status: 401 , headers: corsHeaders});
             }
             console.log(`Marking as unread: ${id}`);
             if (!id) {
@@ -86,7 +86,7 @@ const server = Bun.serve({
         if (url.pathname === "/db/stats" && req.method === "GET") {
             console.log(`Getting stats`);
             if (req.headers.get("Authorization") !== `Bearer ${hardcodedPassword}`) {
-                return new Response("Unauthorized!", { status: 401 });
+                return new Response("Unauthorized!", { status: 401 , headers: corsHeaders});
             }
             const stats = getDBStats();
             return new Response(JSON.stringify(stats), {
@@ -99,7 +99,7 @@ const server = Bun.serve({
         if (url.pathname === "/danger/db/clean" && req.method === "DELETE") {
             console.log(`Removing all rows`);
             if (req.headers.get("Authorization") !== `Bearer ${hardcodedPassword}`) {
-                return new Response("Unauthorized!", { status: 401 });
+                return new Response("Unauthorized!", { status: 401, headers: corsHeaders });
             }
             removeALLFromSQLite();
             return new Response("Removed all rows!");
