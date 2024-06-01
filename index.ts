@@ -1,15 +1,20 @@
 import { Database } from "bun:sqlite";
 import {ulid} from "ulid";
 
+const hardcodedPassword = process.env.ACCESS_TOKEN || "password";
 
 const server = Bun.serve({
     port: 8083,
     async fetch(req) {
         const url = new URL(req.url);
         if (url.pathname === "/rest/webhook" && req.method === "POST") {
+            if (req.headers.get("Authorization") !== `Bearer ${hardcodedPassword}`) {
+                return new Response("Unauthorized!", { status: 401 });
+            }
             const body = await req.text();
             console.log(`Received request`);
             let data;
+            const optionalTags = url.searchParams.get("tags"); // comma separated tags like "tag1,tag2"
             try {
                 data = JSON.parse(body);
             } catch (e) {
@@ -27,10 +32,13 @@ const server = Bun.serve({
             }
             console.log(`URL: ${data.url}`);
             console.log(`Data: ${trucateLogger(data.data)}`);
-            saveToSQLite(data.url, data.data);
+            saveToSQLite(data.url, data.data, optionalTags ? optionalTags.split(",") : []);
             return new Response("Received!");
         }
         if (url.pathname === "/db" && req.method === "GET") {
+            if (req.headers.get("Authorization") !== `Bearer ${hardcodedPassword}`) {
+                return new Response("Unauthorized!", { status: 401 });
+            }
             const pageNumber = parseInt(url.searchParams.get("pageNumber") || "0", 10);
             const pageCount = parseInt(url.searchParams.get("pageCount") || "10", 10);
             console.log(`pageNumber: ${pageNumber}`);
@@ -44,6 +52,9 @@ const server = Bun.serve({
         }
         if (url.pathname === "/db/mark" && req.method === "POST") {
             const id = url.searchParams.get("id");
+            if (req.headers.get("Authorization") !== `Bearer ${hardcodedPassword}`) {
+                return new Response("Unauthorized!", { status: 401 });
+            }
             console.log(`Marking as read: ${id}`);
             if (!id) {
                 return new Response("Please provide an id!", { status: 400 });
@@ -53,11 +64,17 @@ const server = Bun.serve({
         }
         if (url.pathname === "/db/clean" && req.method === "DELETE") {
             console.log(`Removing read rows`);
+            if (req.headers.get("Authorization") !== `Bearer ${hardcodedPassword}`) {
+                return new Response("Unauthorized!", { status: 401 });
+            }
             removeMarkedReadFromSQLite();
             return new Response("Removed read rows!");
         }
         if (url.pathname === "/db/stats" && req.method === "GET") {
             console.log(`Getting stats`);
+            if (req.headers.get("Authorization") !== `Bearer ${hardcodedPassword}`) {
+                return new Response("Unauthorized!", { status: 401 });
+            }
             const stats = getDBStats();
             return new Response(JSON.stringify(stats), {
                 headers: {
@@ -67,7 +84,6 @@ const server = Bun.serve({
         }
         if (url.pathname === "/danger/db/clean" && req.method === "DELETE") {
             console.log(`Removing all rows`);
-            const hardcodedPassword = "deleteMe@1234";
             if (req.headers.get("Authorization") !== `Bearer ${hardcodedPassword}`) {
                 return new Response("Unauthorized!", { status: 401 });
             }
@@ -76,10 +92,10 @@ const server = Bun.serve({
         }
         return new Response("404!");
       },
-
 });
 
-function saveToSQLite(url: string, data: string) {
+
+function saveToSQLite(url: string, data: string, tags: string[] = []) {
     const db = new Database("mydb.sqlite", { create: true });
     const formatedUrl = new URL(url).origin + new URL(url).pathname;
     const createTableQuery = db.query(`
@@ -88,10 +104,14 @@ function saveToSQLite(url: string, data: string) {
         url TEXT UNIQUE,
         data BLOB,
         date TEXT,
-        read INTEGER
+        read INTEGER,
+        tags TEXT
         );
     `);
     createTableQuery.run();
+
+    // Convert tags array to string
+    const tagsString = tags.join(',');
 
     // Check if URL exists
     const urlExistsQuery = db.query(`SELECT url FROM content WHERE url = ?`);
@@ -101,17 +121,17 @@ function saveToSQLite(url: string, data: string) {
         // If URL exists, update the row
         const updateDataQuery = db.query(`
             UPDATE content
-            SET data = ?, date = ?, read = ?
+            SET data = ?, date = ?, read = ?, tags = ?
             WHERE url = ?
         `);
-        updateDataQuery.run(data, new Date().toISOString(), 0, formatedUrl);
+        updateDataQuery.run(data, new Date().toISOString(), 0, tagsString, formatedUrl);
     } else {
         // If URL does not exist, insert a new row
         const insertDataQuery = db.query(`
-            INSERT INTO content (id, url, data, date, read)
-            VALUES (?, ?, ?, ?, ?)
+            INSERT INTO content (id, url, data, date, read, tags)
+            VALUES (?, ?, ?, ?, ?, ?)
         `);
-        insertDataQuery.run(ulid(), formatedUrl, data, new Date().toISOString(), 0);
+        insertDataQuery.run(ulid(), formatedUrl, data, new Date().toISOString(), 0, tagsString);
     }
 
     // print count of rows
