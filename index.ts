@@ -67,6 +67,10 @@ const server = Bun.serve({
         }
         if (url.pathname === "/danger/db/clean" && req.method === "DELETE") {
             console.log(`Removing all rows`);
+            const hardcodedPassword = "deleteMe@1234";
+            if (req.headers.get("Authorization") !== `Bearer ${hardcodedPassword}`) {
+                return new Response("Unauthorized!", { status: 401 });
+            }
             removeALLFromSQLite();
             return new Response("Removed all rows!");
         }
