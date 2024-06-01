@@ -36,9 +36,6 @@ const server = Bun.serve({
             return new Response("Received!");
         }
         if (url.pathname === "/db" && req.method === "GET") {
-            if (req.headers.get("Authorization") !== `Bearer ${hardcodedPassword}`) {
-                return new Response("Unauthorized!", { status: 401 });
-            }
             const pageNumber = parseInt(url.searchParams.get("pageNumber") || "0", 10);
             const pageCount = parseInt(url.searchParams.get("pageCount") || "10", 10);
             console.log(`pageNumber: ${pageNumber}`);
