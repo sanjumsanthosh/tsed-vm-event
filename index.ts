@@ -65,6 +65,11 @@ const server = Bun.serve({
                 },
             });
         }
+        if (url.pathname === "/danger/db/clean" && req.method === "DELETE") {
+            console.log(`Removing all rows`);
+            removeALLFromSQLite();
+            return new Response("Removed all rows!");
+        }
         return new Response("404!");
       },
 
@@ -143,6 +148,14 @@ function getDBStats() {
     const size = sizeQuery.get() as {size: string};
     const sizeInMB = `${parseFloat(size.size) / 1024 / 1024} MB`;
     return {rows, readRows, unreadRows, sizeInMB};
+}
+
+function removeALLFromSQLite() {
+    const db = new Database("mydb.sqlite", { create: true });
+    const removeQuery = db.query(`
+        DELETE FROM content
+    `);
+    removeQuery.run();
 }
 
 function removeMarkedReadFromSQLite() {
