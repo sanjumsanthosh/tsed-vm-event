@@ -51,7 +51,7 @@ const server = Bun.serve({
                 },
             });
         }
-        if (url.pathname === "/db/mark" && req.method === "POST") {
+        if (url.pathname === "/db/mark" && req.method === "GET") {
             const id = url.searchParams.get("id");
             if (req.headers.get("Authorization") !== `Bearer ${hardcodedPassword}`) {
                 return new Response("Unauthorized!", {
@@ -81,7 +81,7 @@ const server = Bun.serve({
                 },
             });
         }
-        if (url.pathname === "/db/mark/unread" && req.method === "POST") {
+        if (url.pathname === "/db/mark/unread" && req.method === "GET") {
             const id = url.searchParams.get("id");
             if (req.headers.get("Authorization") !== `Bearer ${hardcodedPassword}`) {
                 return new Response("Unauthorized!", {
