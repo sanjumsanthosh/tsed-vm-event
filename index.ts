@@ -173,7 +173,7 @@ function getRowsFromSQLite(pageNumber: number, pageCount: number) {
     const db = new Database("mydb.sqlite", { create: true });
     const selectQuery = db.query(`
         SELECT * FROM content
-        ORDER BY date DESC
+        ORDER BY date ASC
         LIMIT ${pageCount} OFFSET ${pageNumber * pageCount}
     `);
     const rows = selectQuery.all();
