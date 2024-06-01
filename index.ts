@@ -53,15 +53,15 @@ const server = Bun.serve({
         }
         if (url.pathname === "/db/mark" && req.method === "GET") {
             const id = url.searchParams.get("id");
-            if (req.headers.get("Authorization") !== `Bearer ${hardcodedPassword}`) {
-                return new Response("Unauthorized!", {
-                    status: 401,
-                    headers: {
-                        ...corsHeaders,
-                        "Content-Type": "application/json",
-                    },
-                });
-            }
+            // if (req.headers.get("Authorization") !== `Bearer ${hardcodedPassword}`) {
+            //     return new Response("Unauthorized!", {
+            //         status: 401,
+            //         headers: {
+            //             ...corsHeaders,
+            //             "Content-Type": "application/json",
+            //         },
+            //     });
+            // }
             console.log(`Marking as read: ${id}`);
             if (!id) {
                 return new Response("Please provide an id!", {
@@ -83,15 +83,15 @@ const server = Bun.serve({
         }
         if (url.pathname === "/db/mark/unread" && req.method === "GET") {
             const id = url.searchParams.get("id");
-            if (req.headers.get("Authorization") !== `Bearer ${hardcodedPassword}`) {
-                return new Response("Unauthorized!", {
-                    status: 401,
-                    headers: {
-                        ...corsHeaders,
-                        "Content-Type": "application/json",
-                    },
-                });
-            }
+            // if (req.headers.get("Authorization") !== `Bearer ${hardcodedPassword}`) {
+            //     return new Response("Unauthorized!", {
+            //         status: 401,
+            //         headers: {
+            //             ...corsHeaders,
+            //             "Content-Type": "application/json",
+            //         },
+            //     });
+            // }
             console.log(`Marking as unread: ${id}`);
             if (!id) {
                 return new Response("Please provide an id!", {
