@@ -3,12 +3,16 @@
   "module": "index.ts",
   "type": "module",
   "scripts": {
-    "start": "bun index.ts"
+    "start": "bun index.ts",
+    "prod": "pm2 start --interpreter ~/.nvm/versions/node/v16.20.2/bin/bun pm2.config.js"
   },
   "devDependencies": {
     "@types/bun": "latest"
   },
   "peerDependencies": {
     "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "pm2": "^5.4.0"
   }
 }
