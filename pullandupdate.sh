@@ -6,7 +6,10 @@
 echo "Pulling changes from git"
 git pull
 
+echo "Bun install"
+bun i
+
 echo "Restarting the server"
-npm run prod:restart
+bun run prod:restart
 
 echo "Changes updated and server restarted"
