@@ -7,6 +7,9 @@ const server = Bun.serve({
     port: 8083,
     async fetch(req) {
         const url = new URL(req.url);
+        const corsHeaders = {
+            "Access-Control-Allow-Origin": "*",
+        };
         if (url.pathname === "/rest/webhook" && req.method === "POST") {
             if (req.headers.get("Authorization") !== `Bearer ${hardcodedPassword}`) {
                 return new Response("Unauthorized!", { status: 401 });
@@ -33,7 +36,7 @@ const server = Bun.serve({
             console.log(`URL: ${data.url}`);
             console.log(`Data: ${trucateLogger(data.data)}`);
             saveToSQLite(data.url, data.data, optionalTags ? optionalTags.split(",") : []);
-            return new Response("Received!");
+            return new Response("Received!", { headers: corsHeaders });
         }
         if (url.pathname === "/db" && req.method === "GET") {
             const pageNumber = parseInt(url.searchParams.get("pageNumber") || "0", 10);
@@ -43,6 +46,7 @@ const server = Bun.serve({
             const rows = getRowsFromSQLite(pageNumber, pageCount);
             return new Response(JSON.stringify(rows), {
                 headers: {
+                    ...corsHeaders,
                     "Content-Type": "application/json",
                 },
             });
@@ -62,7 +66,7 @@ const server = Bun.serve({
         if (url.pathname === "/db/clean" && req.method === "DELETE") {
             console.log(`Removing read rows`);
             if (req.headers.get("Authorization") !== `Bearer ${hardcodedPassword}`) {
-                return new Response("Unauthorized!", { status: 401 });
+                return new Response("Unauthorized!", { status: 401,  headers: corsHeaders  });
             }
             removeMarkedReadFromSQLite();
             return new Response("Removed read rows!");
@@ -75,6 +79,7 @@ const server = Bun.serve({
             const stats = getDBStats();
             return new Response(JSON.stringify(stats), {
                 headers: {
+                    ...corsHeaders,
                     "Content-Type": "application/json",
                 },
             });
@@ -132,6 +137,34 @@ function saveToSQLite(url: string, data: string, tags: string[] = []) {
     }
 
     // print count of rows
+    const countQuery = db.query(`SELECT COUNT(*) as count FROM content`);
+    console.log(`Rows in the table: ${JSON.stringify(countQuery.get())}`);
+}
+
+function add2autoreaderSQLite(url: string, tags: string[] = []) {
+    const db = new Database("mydb.sqlite", { create: true });
+    const createTableQuery = db.query(`
+        CREATE TABLE IF NOT EXISTS autoreader (
+        id TEXT PRIMARY KEY,
+        url TEXT UNIQUE,
+        date TEXT,
+        read INTEGER,
+        tags TEXT
+        );
+    `);
+    createTableQuery.run();
+
+    const tagsString = tags.join(',');
+    const urlExistsQuery = db.query(`SELECT url FROM content WHERE url = ?`);
+    const urlExists = urlExistsQuery.get(url);
+    if (!urlExists) {
+        // If URL does not exist, insert a new row
+        const insertDataQuery = db.query(`
+            INSERT INTO content (id, url, date, read, tags)
+            VALUES (?, ?, ?, ?, ?)
+        `);
+        insertDataQuery.run(ulid(), url, new Date().toISOString(), 0, tagsString);
+    }
     const countQuery = db.query(`SELECT COUNT(*) as count FROM content`);
     console.log(`Rows in the table: ${JSON.stringify(countQuery.get())}`);
 }
