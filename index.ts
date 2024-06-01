@@ -63,6 +63,18 @@ const server = Bun.serve({
             markReadInSQLite(id);
             return new Response("Marked as read!");
         }
+        if (url.pathname === "/db/mark/unread" && req.method === "POST") {
+            const id = url.searchParams.get("id");
+            if (req.headers.get("Authorization") !== `Bearer ${hardcodedPassword}`) {
+                return new Response("Unauthorized!", { status: 401 });
+            }
+            console.log(`Marking as unread: ${id}`);
+            if (!id) {
+                return new Response("Please provide an id!", { status: 400 });
+            }
+            markUnReadInSQLite(id);
+            return new Response("Marked as unread!");
+        }
         if (url.pathname === "/db/clean" && req.method === "DELETE") {
             console.log(`Removing read rows`);
             if (req.headers.get("Authorization") !== `Bearer ${hardcodedPassword}`) {
@@ -187,6 +199,16 @@ function markReadInSQLite(id: string) {
     const markReadQuery = db.query(`
         UPDATE content
         SET read = 1
+        WHERE id = ?
+    `);
+    markReadQuery.run(id);
+}
+
+function markUnReadInSQLite(id: string) {
+    const db = new Database("mydb.sqlite", { create: true });
+    const markReadQuery = db.query(`
+        UPDATE content
+        SET read = 0
         WHERE id = ?
     `);
     markReadQuery.run(id);
