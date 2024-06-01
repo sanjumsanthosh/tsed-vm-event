@@ -54,31 +54,73 @@ const server = Bun.serve({
         if (url.pathname === "/db/mark" && req.method === "POST") {
             const id = url.searchParams.get("id");
             if (req.headers.get("Authorization") !== `Bearer ${hardcodedPassword}`) {
-                return new Response("Unauthorized!", { status: 401, headers: corsHeaders });
+                return new Response("Unauthorized!", {
+                    status: 401,
+                    headers: {
+                        ...corsHeaders,
+                        "Content-Type": "application/json",
+                    },
+                });
             }
             console.log(`Marking as read: ${id}`);
             if (!id) {
-                return new Response("Please provide an id!", { status: 400 , headers: corsHeaders });
+                return new Response("Please provide an id!", {
+                    status: 400,
+                    headers: {
+                        ...corsHeaders,
+                        "Content-Type": "application/json",
+                    },
+                });
             }
             markReadInSQLite(id);
-            return new Response("Marked as read!", { headers: corsHeaders });
+            return new Response("Marked as read!", {
+                status: 200,
+                headers: {
+                    ...corsHeaders,
+                    "Content-Type": "application/json",
+                },
+            });
         }
         if (url.pathname === "/db/mark/unread" && req.method === "POST") {
             const id = url.searchParams.get("id");
             if (req.headers.get("Authorization") !== `Bearer ${hardcodedPassword}`) {
-                return new Response("Unauthorized!", { status: 401 , headers: corsHeaders});
+                return new Response("Unauthorized!", {
+                    status: 401,
+                    headers: {
+                        ...corsHeaders,
+                        "Content-Type": "application/json",
+                    },
+                });
             }
             console.log(`Marking as unread: ${id}`);
             if (!id) {
-                return new Response("Please provide an id!", { status: 400 , headers: corsHeaders });
+                return new Response("Please provide an id!", {
+                    status: 401,
+                    headers: {
+                        ...corsHeaders,
+                        "Content-Type": "application/json",
+                    },
+                });
             }
             markUnReadInSQLite(id);
-            return new Response("Marked as unread!", { headers: corsHeaders });
+            return new Response("Marked as unread!", {
+                status: 200,
+                headers: {
+                    ...corsHeaders,
+                    "Content-Type": "application/json",
+                },
+            });
         }
         if (url.pathname === "/db/clean" && req.method === "DELETE") {
             console.log(`Removing read rows`);
             if (req.headers.get("Authorization") !== `Bearer ${hardcodedPassword}`) {
-                return new Response("Unauthorized!", { status: 401,  headers: corsHeaders  });
+                return new Response("Unauthorized!", {
+                    status: 401,
+                    headers: {
+                        ...corsHeaders,
+                        "Content-Type": "application/json",
+                    },
+                });
             }
             removeMarkedReadFromSQLite();
             return new Response("Removed read rows!");
@@ -86,7 +128,13 @@ const server = Bun.serve({
         if (url.pathname === "/db/stats" && req.method === "GET") {
             console.log(`Getting stats`);
             if (req.headers.get("Authorization") !== `Bearer ${hardcodedPassword}`) {
-                return new Response("Unauthorized!", { status: 401 , headers: corsHeaders});
+                return new Response("Unauthorized!", {
+                    status: 401,
+                    headers: {
+                        ...corsHeaders,
+                        "Content-Type": "application/json",
+                    },
+                });
             }
             const stats = getDBStats();
             return new Response(JSON.stringify(stats), {
@@ -99,12 +147,24 @@ const server = Bun.serve({
         if (url.pathname === "/danger/db/clean" && req.method === "DELETE") {
             console.log(`Removing all rows`);
             if (req.headers.get("Authorization") !== `Bearer ${hardcodedPassword}`) {
-                return new Response("Unauthorized!", { status: 401, headers: corsHeaders });
+                return new Response("Unauthorized!", {
+                    status: 401,
+                    headers: {
+                        ...corsHeaders,
+                        "Content-Type": "application/json",
+                    },
+                });
             }
             removeALLFromSQLite();
             return new Response("Removed all rows!");
         }
-        return new Response("404!");
+        return new Response("404!", {
+            status: 404,
+            headers: {
+                ...corsHeaders,
+                "Content-Type": "application/json",
+            },
+        });
       },
 });
 
