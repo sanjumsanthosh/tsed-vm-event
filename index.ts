@@ -58,10 +58,10 @@ const server = Bun.serve({
             }
             console.log(`Marking as read: ${id}`);
             if (!id) {
-                return new Response("Please provide an id!", { status: 400 });
+                return new Response("Please provide an id!", { status: 400 , headers: corsHeaders });
             }
             markReadInSQLite(id);
-            return new Response("Marked as read!");
+            return new Response("Marked as read!", { headers: corsHeaders });
         }
         if (url.pathname === "/db/mark/unread" && req.method === "POST") {
             const id = url.searchParams.get("id");
@@ -70,10 +70,10 @@ const server = Bun.serve({
             }
             console.log(`Marking as unread: ${id}`);
             if (!id) {
-                return new Response("Please provide an id!", { status: 400 });
+                return new Response("Please provide an id!", { status: 400 , headers: corsHeaders });
             }
             markUnReadInSQLite(id);
-            return new Response("Marked as unread!");
+            return new Response("Marked as unread!", { headers: corsHeaders });
         }
         if (url.pathname === "/db/clean" && req.method === "DELETE") {
             console.log(`Removing read rows`);
