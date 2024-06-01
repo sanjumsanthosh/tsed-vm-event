@@ -40,7 +40,7 @@ const server = Bun.serve({
         }
         if (url.pathname === "/db" && req.method === "GET") {
             const pageNumber = parseInt(url.searchParams.get("pageNumber") || "0", 10);
-            const pageCount = parseInt(url.searchParams.get("pageCount") || "10", 10);
+            const pageCount = parseInt(url.searchParams.get("pageCount") || "50", 10);
             console.log(`pageNumber: ${pageNumber}`);
             console.log(`pageCount: ${pageCount}`);
             const rows = getRowsFromSQLite(pageNumber, pageCount);
@@ -173,7 +173,9 @@ function getRowsFromSQLite(pageNumber: number, pageCount: number) {
     const db = new Database("mydb.sqlite", { create: true });
     const selectQuery = db.query(`
         SELECT * FROM content
-        ORDER BY date ASC
+        ORDER BY 
+            CASE WHEN read = 0 THEN 0 ELSE 1 END,
+            date ASC
         LIMIT ${pageCount} OFFSET ${pageNumber * pageCount}
     `);
     const rows = selectQuery.all();
