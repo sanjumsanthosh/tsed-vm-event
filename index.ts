@@ -102,7 +102,7 @@ function saveToSQLite(url: string, data: string) {
             INSERT INTO content (id, url, data, date, read)
             VALUES (?, ?, ?, ?, ?)
         `);
-        insertDataQuery.run(ulid(), url, data, new Date().toISOString(), 0);
+        insertDataQuery.run(ulid(), formatedUrl, data, new Date().toISOString(), 0);
     }
 
     // print count of rows
