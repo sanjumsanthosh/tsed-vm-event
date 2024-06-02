@@ -15,7 +15,6 @@ const server = Bun.serve({
                 return new Response("Unauthorized!", { status: 401 , headers: corsHeaders});
             }
             const body = await req.text();
-            console.log(`Received request`);
             let data;
             const optionalTags = url.searchParams.get("tags"); // comma separated tags like "tag1,tag2"
             try {
@@ -41,8 +40,6 @@ const server = Bun.serve({
         if (url.pathname === "/db" && req.method === "GET") {
             const pageNumber = parseInt(url.searchParams.get("pageNumber") || "0", 10);
             const pageCount = parseInt(url.searchParams.get("pageCount") || "50", 10);
-            console.log(`pageNumber: ${pageNumber}`);
-            console.log(`pageCount: ${pageCount}`);
             const rows = getRowsFromSQLite(pageNumber, pageCount);
             return new Response(JSON.stringify(rows), {
                 headers: {
@@ -143,6 +140,21 @@ const server = Bun.serve({
                     "Content-Type": "application/json",
                 },
             });
+        }
+        if (url.pathname === "/db/tag" && req.method === "POST") {
+            const tags = url.searchParams.get("tags") || "";
+            const id = url.searchParams.get("id");
+            if (!id) {
+                return new Response("Please provide an id!", {
+                    status: 400,
+                    headers: {
+                        ...corsHeaders,
+                        "Content-Type": "application/json",
+                    },
+                });
+            }
+            console.log(`Updating tags for ${id} with ${tags}`);
+            updateTagList(tags.split(','), id);
         }
         if (url.pathname === "/danger/db/clean" && req.method === "DELETE") {
             console.log(`Removing all rows`);
@@ -274,6 +286,20 @@ function markUnReadInSQLite(id: string) {
     markReadQuery.run(id);
 }
 
+function updateTagList(tags: string[], id: string, append: boolean = false) {
+    const db = new Database("mydb.sqlite", { create: true });
+    let newTags: string;
+    if (append) {
+        const selectQuery = db.query(`SELECT tags FROM content WHERE id = ?`);
+        const currentTags = (selectQuery.get(id) || {tags: ''}) as {tags: string};
+        newTags = [...new Set([...currentTags.tags.split(','), ...tags])].join(',');
+    } else {
+        newTags = tags.join(',');
+    }
+    const updateQuery = db.query(`UPDATE content SET tags = ? WHERE id = ?`);
+    updateQuery.run(newTags, id);
+}
+
 function getDBStats() {
     const db = new Database("mydb.sqlite", { create: true });
     const countQuery = db.query(`SELECT COUNT(*) as count FROM content`);
@@ -296,12 +322,20 @@ function removeALLFromSQLite() {
     removeQuery.run();
 }
 
-function removeMarkedReadFromSQLite() {
+function removeMarkedReadFromSQLite(ignoreTags: boolean = false) {
     const db = new Database("mydb.sqlite", { create: true });
-    const removeQuery = db.query(`
-        DELETE FROM content
-        WHERE read = 1
-    `);
+    let removeQuery;
+    if (ignoreTags) {
+        removeQuery = db.query(`
+            DELETE FROM content
+            WHERE read = 1
+        `);
+    } else {
+        removeQuery = db.query(`
+            DELETE FROM content
+            WHERE read = 1 AND tags = ""
+        `);
+    }
     removeQuery.run();
 }
 
