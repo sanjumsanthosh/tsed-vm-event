@@ -161,6 +161,68 @@ const server = Bun.serve({
             removeALLFromSQLite();
             return new Response("Removed all rows!");
         }
+
+
+        // ---- tags 
+        if (url.pathname === "/tag" && req.method === "GET") {
+            const tags = getTagsFromTable();
+            return new Response(JSON.stringify(tags), {
+                headers: {
+                    ...corsHeaders,
+                    "Content-Type": "application/json",
+                },
+            });
+        }
+
+        if (url.pathname === "/tag" && req.method === "POST") {
+            const tag = url.searchParams.get("tag") || "";
+            const additionalJsonDetails = url.searchParams.get("additionalJsonDetails") || "";
+            const groupTags = url.searchParams.get("groupTags") || "";
+            const label = url.searchParams.get("label");
+            const color = url.searchParams.get("color");
+
+            if (!label || !color) {
+                return new Response("Please provide label and color!", {
+                    status: 400,
+                    headers: {
+                        ...corsHeaders,
+                        "Content-Type": "application/json",
+                    },
+                });
+            }
+            console.log(`Adding tag: ${tag}`);
+            addToTagsTable(tag, label!, color!, additionalJsonDetails, groupTags.split(','));
+            return new Response("Added tag!", {
+                status: 200,
+                headers: {
+                    ...corsHeaders,
+                    "Content-Type": "application/json",
+                },
+            });
+        }
+
+        if (url.pathname === "/tag" && req.method === "DELETE") {
+            const tag = url.searchParams.get("tag") || "";
+            if (!tag) {
+                return new Response("Please provide a tag!", {
+                    status: 400,
+                    headers: {
+                        ...corsHeaders,
+                        "Content-Type": "application/json",
+                    },
+                });
+            }
+            console.log(`Deleting tag: ${tag}`);
+            deleteTagByName(tag);
+            return new Response("Deleted tag!", {
+                status: 200,
+                headers: {
+                    ...corsHeaders,
+                    "Content-Type": "application/json",
+                },
+            });
+        }
+
         return new Response("404!", {
             status: 404,
             headers: {
@@ -334,6 +396,64 @@ function removeMarkedReadFromSQLite(ignoreTags: boolean = false) {
     }
     removeQuery.run();
 }
+
+
+// ---- New database for storing available tags with 
+// const options = [
+//     { value: 'explore', label: 'Explore' , color: '#FF5630'},
+//     { value: 'add2anki', label: 'Add to Anki' , color: '#FFC400'},
+//   ] and an optional AdditonalJsonDetails & group tags
+
+function addToTagsTable(tag: string,label: string, color: string,  additionalJsonDetails: string="", groupTags: string[] = []) {
+    // table name: tags
+    // columns: id auto increment, tag text, additionalJsonDetails text, groupTags text, label text, color text
+
+    console.log(`Adding tag: ${tag}`);
+    
+    const db = new Database("mydb.sqlite", { create: true });
+    const createTableQuery = db.query(`
+        CREATE TABLE IF NOT EXISTS tags (
+        id INTEGER PRIMARY KEY,
+        tag TEXT UNIQUE,
+        additionalJsonDetails TEXT,
+        groupTags TEXT,
+        label TEXT,
+        color TEXT
+        );
+    `);
+
+    createTableQuery.run();
+
+    const insertOrUpdateDataQuery = db.query(`
+        INSERT OR REPLACE INTO tags (tag, additionalJsonDetails, groupTags, label, color)
+        VALUES (?, ?, ?, ?, ?)
+    `);
+
+    insertOrUpdateDataQuery.run(tag, additionalJsonDetails, groupTags.join(','), label, color);
+
+    const countQuery = db.query(`SELECT COUNT(*) as count FROM tags`);
+    console.log(`Rows in the table: ${JSON.stringify(countQuery.get())}`);
+}
+
+function getTagsFromTable() {
+    const db = new Database("mydb.sqlite", { create: true });
+    const selectQuery = db.query(`
+        SELECT * FROM tags
+    `);
+    const rows = selectQuery.all();
+    return rows;
+}
+
+function deleteTagByName(tag: string) {
+    const db = new Database("mydb.sqlite", { create: true });
+    const deleteQuery = db.query(`
+        DELETE FROM tags
+        WHERE tag = ?
+    `);
+    deleteQuery.run(tag);
+}
+
+
 
 function trucateLogger(data: string){
     return data.length > 50 ? `${data.substring(0, 50)}...` : data;
