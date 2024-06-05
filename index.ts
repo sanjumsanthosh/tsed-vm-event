@@ -124,15 +124,6 @@ const server = Bun.serve({
         }
         if (url.pathname === "/db/stats" && req.method === "GET") {
             console.log(`Getting stats`);
-            if (req.headers.get("Authorization") !== `Bearer ${hardcodedPassword}`) {
-                return new Response("Unauthorized!", {
-                    status: 401,
-                    headers: {
-                        ...corsHeaders,
-                        "Content-Type": "application/json",
-                    },
-                });
-            }
             const stats = getDBStats();
             return new Response(JSON.stringify(stats), {
                 headers: {
@@ -304,14 +295,18 @@ function getDBStats() {
     const db = new Database("mydb.sqlite", { create: true });
     const countQuery = db.query(`SELECT COUNT(*) as count FROM content`);
     const readCountQuery = db.query(`SELECT COUNT(*) as count FROM content WHERE read = 1`);
+    const readCountQueryButWithTags = db.query(`SELECT COUNT(*) as count FROM content WHERE read = 1 AND tags != ""`);
+    const readCountQueryButWithoutTags = db.query(`SELECT COUNT(*) as count FROM content WHERE read = 1 AND tags = ""`);
     const unreadCountQuery = db.query(`SELECT COUNT(*) as count FROM content WHERE read = 0`);
     const sizeQuery = db.query(`SELECT page_count * page_size as size FROM pragma_page_count(), pragma_page_size()`);
     const rows = countQuery.get();
     const readRows = readCountQuery.get();
+    const readRowsButWithTags = readCountQueryButWithTags.get();
+    const readRowsButWithoutTags = readCountQueryButWithoutTags.get();
     const unreadRows = unreadCountQuery.get();
     const size = sizeQuery.get() as {size: string};
     const sizeInMB = `${parseFloat(size.size) / 1024 / 1024} MB`;
-    return {rows, readRows, unreadRows, sizeInMB};
+    return {rows, readRows, unreadRows, sizeInMB, readRowsButWithTags, readRowsButWithoutTags};
 }
 
 function removeALLFromSQLite() {
@@ -331,6 +326,7 @@ function removeMarkedReadFromSQLite(ignoreTags: boolean = false) {
             WHERE read = 1
         `);
     } else {
+        
         removeQuery = db.query(`
             DELETE FROM content
             WHERE read = 1 AND tags = ""
